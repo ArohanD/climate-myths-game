@@ -1,0 +1,50 @@
+name: Publish site and PR previews
+
+on:
+  push:
+    branches: [main]
+  pull_request_target:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Always run trusted main code. PR files are copied as static data only.
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Test main
+        run: |
+          node --test
+          python3 .github/scripts/assemble_pages_test.py
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Assemble main site and open PR previews
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PAGES_URL: ${{ steps.pages.outputs.base_url }}
+        run: python3 .github/scripts/assemble_pages.py
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v4
