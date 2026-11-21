@@ -8,6 +8,28 @@ import base64
 
 
 class PagesAssemblyTest(unittest.TestCase):
+    def test_default_changes_invalidate_the_import_and_entrypoint(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'REPOSITORY':'owner/repo', 'GH_TOKEN':'test'}):
+            spec = importlib.util.spec_from_file_location('pages', Path(__file__).with_name('assemble_pages.py'))
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            root = Path(directory)
+            (root / 'initial-data.js').write_text('export const initialDeck = [];')
+            (root / 'deck.js').write_text('export const validateDeck = x => x;')
+            (root / 'styles.css').write_text('body {color:black}')
+            (root / 'app.js').write_text("import { initialDeck } from './initial-data.js'; import { validateDeck } from './deck.js?v=old';")
+            (root / 'index.html').write_text('<link href="styles.css?v=old"><script src="app.js?v=old"></script>')
+            module.version_assets(root)
+            first_app = (root / 'app.js').read_text()
+            first_html = (root / 'index.html').read_text()
+            module.version_assets(root)
+            self.assertEqual((root / 'index.html').read_text(), first_html)
+            (root / 'initial-data.js').write_text('export const initialDeck = [{id:1}];')
+            module.version_assets(root)
+            self.assertNotEqual((root / 'app.js').read_text(), first_app)
+            self.assertNotEqual((root / 'index.html').read_text(), first_html)
+            self.assertNotIn('?v=old', (root / 'app.js').read_text())
+
     def test_static_allowlist_fork_skip_and_no_execution(self):
         script = Path(__file__).with_name('assemble_pages.py')
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {

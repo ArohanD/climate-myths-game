@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { initialDeck } from './initial-data.js';
+import { readFileSync } from 'node:fs';
+import { initialDeck as currentDefaults } from './initial-data.js';
+const initialDeck = JSON.parse(readFileSync(new URL('./test/fixtures/original-deck.json', import.meta.url), 'utf8'));
 import { validateDeck, makeCards, paginate } from './deck.js';
+test('current defaults remain a valid deck as the sheet evolves',()=>{assert.deepEqual(validateDeck(currentDefaults),currentDefaults);});
 test('original deck preserves all shuffled matches and produces four complete sheets',()=>{const deck=validateDeck(initialDeck);assert.equal(deck.length,12);assert.equal(makeCards(deck).length,36);assert.deepEqual(deck.find(m=>m.id===4).evidence.map(e=>e.id),[24,5]);assert.deepEqual(paginate(makeCards(deck)).map(p=>p.length),[9,9,9,9]);assert.equal(new Set(deck.flatMap(m=>m.evidence.map(e=>e.id))).size,24);});
 test('rejects duplicate evidence IDs across myths',()=>{const d=structuredClone(initialDeck);d[1].evidence[0].id=d[0].evidence[0].id;assert.throws(()=>validateDeck(d),/unique/);});
 test('rejects missing content and malformed imported decks',()=>{assert.throws(()=>validateDeck([]));assert.throws(()=>validateDeck({}));const d=structuredClone(initialDeck);d[0].text=' ';assert.throws(()=>validateDeck(d),/needs text/);});

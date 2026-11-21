@@ -1,0 +1,80 @@
+name: Sync defaults from Google Sheet
+
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Validate the sheet without updating defaults
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - '.github/scripts/sync-sheet*'
+      - '.github/workflows/sync-defaults.yml'
+      - 'deck.js'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sheet-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test
+      - name: Verify public sheet without changing files
+        run: node .github/scripts/sync-sheet.mjs --dry-run
+
+  sync:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch and validate the sheet
+        env:
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then
+            node .github/scripts/sync-sheet.mjs --dry-run
+          else
+            node .github/scripts/sync-sheet.mjs
+          fi
+      - name: Run data and sync tests
+        run: node --test
+      - name: Commit changed defaults and publish
+        if: inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- initial-data.js; then
+            echo 'Defaults already match the sheet.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add initial-data.js
+          git commit -m 'Sync default cards from Google Sheet'
+          git push origin HEAD:main
+          # GITHUB_TOKEN pushes do not trigger push workflows; dispatch explicitly.
+          gh workflow run pages.yml --ref main
+          echo 'Defaults updated. Pages publishing has been requested.' >> "$GITHUB_STEP_SUMMARY"
