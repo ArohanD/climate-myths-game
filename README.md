@@ -49,3 +49,20 @@ GitHub Actions publishes `main` to GitHub Pages. Open PRs from branches in this 
 The publishing workflow always checks out and executes trusted `main` code. It retrieves only six allowlisted static files from PR commits through the GitHub API; it never runs PR scripts, installs PR dependencies or executes PR tests with publishing permissions. Preview JavaScript runs only in visitors' browsers. Only app files are deployed; repository documentation and workflows are excluded. Preview drafts use separate localStorage keys from production.
 
 The teacher answer key uses the full myth and matching evidence text, alongside the small evidence references on player cards. Card and site footers, marketing paragraphs, generated game-rule adaptations and discussion prompts were removed in the Cut-paper update. Source statements remain unchanged. Native PDF saving and physical printing still require manual validation.
+
+## Google Sheet defaults
+
+The source of future defaults is the public [Cards sheet](https://docs.google.com/spreadsheets/d/1fesncrZhMUcNB6NUvjBRD_AA6ogtPgRvAUitofFaVc8/edit?gid=0). `Sheet1` (gid `0`) contains one row per evidence statement, with the exact headers `myth_id`, `myth`, `evidence_id`, `evidence`.
+
+- Repeat the same myth ID and exact myth text for each of its evidence rows. When editing a myth, update all its rows consistently.
+- IDs must be positive integers; evidence IDs must be unique. Blank rows are ignored; incomplete rows, conflicting myth text, duplicate IDs, empty decks and app-limit violations stop the sync.
+- Keep the sheet publicly readable. No Google credentials are stored in the repository. The script never writes to the sheet.
+- Existing scientific statements are copied verbatim; the sync does not generate or fact-check content. It validates structure and text-length limits; the app still checks physical card fit before printing.
+
+After this workflow is merged to `main`, **Actions → Sync defaults from Google Sheet → Run workflow → main** runs it on demand. Check **dry_run** to validate without saving changes. It also runs daily at **09:17 UTC** (GitHub schedules can be delayed). PR runs only validate and never update production.
+
+A successful sync commits only `initial-data.js` when content changes, then explicitly dispatches the Pages workflow. The explicit dispatch is necessary because a push made with `GITHUB_TOKEN` does not trigger another push workflow. Invalid downloads leave the previous defaults untouched; a concurrent edit to `main` causes a normal push failure rather than overwriting it. If publishing fails after a successful sync, rerun the **Publish site and PR previews** workflow.
+
+New visitors and **Reset deck** use the latest defaults; saved browser edits are never replaced automatically. Pages assembly adds content-derived asset URLs so changed defaults do not remain hidden by cached modules.
+
+Local read-only check: `node .github/scripts/sync-sheet.mjs --dry-run`. Tests: `npm test` and `python3 .github/scripts/assemble_pages_test.py`. Historical source expectations live in `test/fixtures/original-deck.json` so legitimate future changes in myth/evidence counts do not break those tests.

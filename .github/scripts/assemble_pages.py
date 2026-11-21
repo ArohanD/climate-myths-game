@@ -1,15 +1,34 @@
 """Publish only static app files; never execute or import code from a PR."""
 import base64
+import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
+import re
 import urllib.request
 
 FILES = ('index.html', 'styles.css', 'app.js', 'deck.js', 'initial-data.js', 'favicon.svg')
 REPOSITORY = os.environ['REPOSITORY']
 TOKEN = os.environ['GH_TOKEN']
 OUTPUT = Path('_site')
+
+
+def version_assets(destination):
+    """Content-derived URLs prevent stale defaults and mixed cached releases."""
+    def version(name):
+        digest = hashlib.sha256((destination / name).read_bytes()).hexdigest()[:16]
+        return f'{name}?v={digest}'
+    app = destination / 'app.js'
+    script = app.read_text(encoding='utf-8')
+    for name in ('initial-data.js', 'deck.js'):
+        script = re.sub(r"(?<=['\"])\./" + re.escape(name) + r"(?:\?[^'\"]*)?(?=['\"])", './' + version(name), script)
+    app.write_text(script, encoding='utf-8')
+    index = destination / 'index.html'
+    html = index.read_text(encoding='utf-8')
+    for name in ('app.js', 'styles.css'):
+        html = re.sub(r"(?<=['\"])" + re.escape(name) + r"(?:\?[^'\"]*)?(?=['\"])", version(name), html)
+    index.write_text(html, encoding='utf-8')
 
 
 def api(path):
@@ -25,6 +44,7 @@ def main():
     OUTPUT.mkdir(exist_ok=False)
     for name in FILES:
         shutil.copyfile(name, OUTPUT / name)
+    version_assets(OUTPUT)
     (OUTPUT / '.nojekyll').touch()
     base_url = os.environ['PAGES_URL'].rstrip('/')
     summary = [f'Live site: {base_url}/', '', '## PR previews', '',
@@ -58,6 +78,7 @@ def main():
             destination.mkdir(parents=True)
             for name, content in files.items():
                 (destination / name).write_bytes(content)
+            version_assets(destination)
             url = f'{base_url}/previews/pr-{number}/'
             summary.append(f'- [PR #{number}]({url}) · `{sha[:7]}`')
         page += 1
