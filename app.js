@@ -69,13 +69,18 @@ function updateCounts() {
 }
 function currentCard() {
   const item = proof.type === 'myth' ? deck.find(m => m.id === proof.id) : deck.flatMap(m => m.evidence).find(e => e.id === proof.id);
-  return item ? { ...item, type: proof.type } : null;
+  return item ? { ...item, type: proof.type, evidenceIds: item.evidence?.map(e => e.id) } : null;
 }
 function makeCard(item, placeholder = false) {
   const node = el('article', undefined, `game-card ${item.type}`);
+  const heading = el('div', undefined, 'card-heading');
   const label = el('div', undefined, 'card-label');
   label.append(el('span', item.type === 'myth' ? 'Myth' : 'Evidence'));
-  node.append(label, el('p', item.text || (placeholder ? 'Your card text will appear here.' : ''), 'card-text'));
+  heading.append(label);
+  if (item.type === 'evidence') heading.append(el('span', String(item.id), 'evidence-number'));
+  node.append(heading);
+  if (item.type === 'myth') node.append(el('p', `Evidence ${item.evidenceIds.join(' or ')}`, 'card-matches'));
+  node.append(el('p', item.text || (placeholder ? 'Your card text will appear here.' : ''), 'card-text'));
   return node;
 }
 function showProof(type, id) {

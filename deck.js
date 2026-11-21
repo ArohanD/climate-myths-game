@@ -15,6 +15,6 @@ export function validateDeck(value, { draft = false } = {}) {
   return value.map(m=>({id:m.id,text:m.text,evidence:m.evidence.map(e=>({id:e.id,text:e.text}))}));
 }
 export function makeCards(deck) {
-  return [...deck.map(m=>({id:m.id,text:m.text,type:'myth'})), ...deck.flatMap(m=>m.evidence).sort((a,b)=>a.id-b.id).map(e=>({...e,type:'evidence'}))];
+  return [...deck.map(m=>({id:m.id,text:m.text,type:'myth',evidenceIds:m.evidence.map(e=>e.id)})), ...deck.flatMap(m=>m.evidence).sort((a,b)=>a.id-b.id).map(e=>({...e,type:'evidence'}))];
 }
 export function paginate(cards) { return Array.from({length:Math.ceil(cards.length/9)},(_,i)=>cards.slice(i*9,i*9+9)); }

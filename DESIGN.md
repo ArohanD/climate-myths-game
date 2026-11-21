@@ -2,7 +2,7 @@
 
 ## Current direction: Cut-paper club
 
-Selected by the user on November 21, 2026. This supersedes the earlier blue-workbench styling decisions below: warm paper, black cut-out wordmark, yellow highlight, taped editor and red/blue cut-out category labels. Georgia is used for the heading and myth cards; editable fields and evidence keep a plain sans face. No card numbers or footers are visible. IDs remain internal for data relationships; the teacher key pairs full card text.
+Selected by the user on November 21, 2026. This supersedes the earlier blue-workbench styling decisions below: warm paper, black cut-out wordmark, yellow highlight, taped editor and red/blue cut-out category labels. Georgia is used for the heading and myth cards; editable fields and evidence keep a plain sans face. Evidence cards show small numbers; myth cards show matching evidence numbers without a myth number. Footers remain removed. The teacher key pairs full card text.
 
 Content policy: preserve source myth/evidence wording. Newly written text is limited to essential interface labels, technical print guidance, validation and state feedback. Remove the earlier generated marketing, gameplay adaptations and discussion prompts. Do not add substantive teaching content without source text or explicit user approval.
 

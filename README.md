@@ -19,7 +19,7 @@ Alternatively: `python3 -m http.server 8000`. No installation or production buil
 - Search the deck, expand a myth, and edit its matching evidence. Focusing a field shows its printable card in a live preview. IDs are stable and evidence numbering preserves the source's shuffled matches.
 - Add or remove cards. Undo restores the previous deck after removal, import, or reset; typing a new edit clears that single Undo snapshot.
 - Changes, including unfinished blank drafts, save to localStorage in the current browser. Use Deck options to download/load JSON to back up or share a deck. There is no shared database or simultaneous editing.
-- Generate game creates 2.5 × 3.5 inch cards, nine per US Letter sheet, plus a text-based teacher answer key. Player cards have no visible IDs or footers.
+- Generate game creates 2.5 × 3.5 inch cards, nine per US Letter sheet, plus a text-based teacher answer key. Evidence cards show small IDs; myth cards show their matching evidence IDs. Neither has a footer.
 - Select Letter, portrait, 100% scale, single-sided, and disable browser headers/footers when printing. Cut along dotted borders. Text overflow blocks generation so it can be shortened before printing.
 - Editing invalidates the preview; generate again before printing.
 
@@ -48,4 +48,4 @@ GitHub Actions publishes `main` to GitHub Pages. Open PRs from branches in this 
 
 The publishing workflow always checks out and executes trusted `main` code. It retrieves only six allowlisted static files from PR commits through the GitHub API; it never runs PR scripts, installs PR dependencies or executes PR tests with publishing permissions. Preview JavaScript runs only in visitors' browsers. Only app files are deployed; repository documentation and workflows are excluded. Preview drafts use separate localStorage keys from production.
 
-The teacher answer key uses the full myth and matching evidence text, so player cards need no visible IDs. Card and site footers, marketing paragraphs, generated game-rule adaptations and discussion prompts were removed in the Cut-paper update. Source statements remain unchanged. Native PDF saving and physical printing still require manual validation.
+The teacher answer key uses the full myth and matching evidence text, alongside the small evidence references on player cards. Card and site footers, marketing paragraphs, generated game-rule adaptations and discussion prompts were removed in the Cut-paper update. Source statements remain unchanged. Native PDF saving and physical printing still require manual validation.
