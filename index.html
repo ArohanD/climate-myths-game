@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#f6f0df">
 <meta name="description" content="Build a printable Climate Mythbusters card game for your classroom. Edit myths and evidence, preview the cards, and save your deck.">
-<title>Climate Mythbusters — Classroom card builder</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=20261121-3">
+<title>Climate Mythbusters — Classroom card builder</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css?v=20261121-4">
 </head>
 <body>
 <a class="skip-link" href="#editor">Skip to deck editor</a>
@@ -12,10 +12,10 @@
 <main id="top">
 <section class="intro" aria-labelledby="page-title"><div><h1 id="page-title">Myths and<br><em>evidence.</em></h1></div><div class="paper-art" aria-hidden="true"><span>?</span><span>!</span></div></section>
 <section id="editor" aria-labelledby="editor-title">
-<div class="deck-bar"><div><h2 id="editor-title">Your deck</h2><p id="counts"></p></div><button class="primary" id="generate"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h7l3 3v13H5zM12 2v4h3M8 10h4M8 13h4"/></svg><span>Generate game</span></button></div>
+<div class="deck-bar"><div><h2 id="editor-title">Your deck</h2><p id="counts"></p></div></div>
 <div class="workspace"><div class="deck-workspace">
-<div class="editor-tools"><label class="search-control"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg><span class="sr-only">Find a myth or evidence</span><input id="search" type="search" placeholder="Find a myth or evidence…" autocomplete="off" name="deck-search"></label><button id="add" class="secondary">Add myth</button><button id="reset" class="quiet">Reset deck</button></div>
-<div class="list-caption"><span>Myths and matching evidence</span><span id="visible-count"></span></div><div id="rows"></div>
+<div class="editor-tools"><button class="primary" id="generate"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h7l3 3v13H5zM12 2v4h3M8 10h4M8 13h4"/></svg><span>Generate deck</span></button><button id="add" class="secondary">Add myth</button><button id="reset" class="quiet">Reset deck</button></div>
+<div class="list-caption"><span>Myths and matching evidence</span></div><div id="rows"></div>
 <div id="empty" class="empty-state" hidden><h3 id="empty-title"></h3><p id="empty-description"></p><button id="empty-action" class="secondary"></button></div>
 <div class="save-line"><span id="save-status">Edits stay in this browser.</span></div></div>
 <aside class="proof-panel" aria-labelledby="proof-title"><div class="proof-heading"><h2 id="proof-title">Card preview</h2><span id="proof-position"></span></div><p class="proof-instruction">Select a text field to preview its card.</p><div class="proof-stage"><div id="live-proof"></div></div><div class="proof-spec"><span>2.5 × 3.5 in</span><span id="fit-status">Ready to print</span></div></aside></div>
@@ -23,5 +23,5 @@
 </section>
 <section id="preview" class="output-section" aria-labelledby="preview-title" hidden><div class="output-heading"><div><h2 id="preview-title" tabindex="-1">Print preview</h2><p id="preview-description"></p></div><button class="primary" id="print">Print / Save PDF</button></div><div class="print-instructions"><p><strong>Print at actual size.</strong> Choose Letter, portrait, 100% scale and single-sided. Turn off browser headers and footers. Cut along the dotted lines.</p><p id="stale-note" hidden>You've edited the deck. Generate the game again to update these sheets.</p></div><div id="preview-pages"></div></section>
 </main></div>
-<div id="print-pages"></div><noscript><p class="noscript">Enable JavaScript to edit the deck and generate your cards. Your text is processed in your browser.</p></noscript><script type="module" src="app.js?v=20261121-3"></script>
+<div id="print-pages"></div><noscript><p class="noscript">Enable JavaScript to edit the deck and generate your cards. Your text is processed in your browser.</p></noscript><script type="module" src="app.js?v=20261121-4"></script>
 </body></html>

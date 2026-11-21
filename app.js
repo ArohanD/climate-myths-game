@@ -150,8 +150,6 @@ function makeField(item, type, myth, remove) {
 function focusField(type, id) {
   const myth = type === 'myth' ? deck.find(m => m.id === id) : deck.find(m => m.evidence.some(e => e.id === id));
   if (!myth) return;
-  $('search').value = '';
-  applySearch();
   const row = $(`myth-row-${myth.id}`);
   activeMyth = myth.id;
   document.querySelectorAll('.myth-row').forEach(r => { r.open = r === row; });
@@ -212,24 +210,15 @@ function renderEditor() {
     });
     $('rows').append(row);
   });
-  applySearch();
+  updateEmptyState();
   if (!currentCard()) proof = { type: 'myth', id: deck[0]?.id };
   showProof(proof.type, proof.id);
 }
-function applySearch() {
-  const query = $('search').value.trim().toLocaleLowerCase();
-  let visible = 0;
-  deck.forEach(myth => {
-    const content = [`myth ${myth.id}`, myth.text, ...myth.evidence.flatMap(e => [`evidence ${e.id}`, e.text])].join(' ').toLocaleLowerCase();
-    const match = !query || content.includes(query);
-    $(`myth-row-${myth.id}`).hidden = !match;
-    if (match) visible++;
-  });
-  $('visible-count').textContent = `${visible} of ${deck.length}`;
-  $('empty').hidden = visible > 0;
-  $('empty-title').textContent = deck.length ? 'No matching cards' : 'Your deck is empty';
-  $('empty-description').textContent = deck.length ? 'Try another word, or clear the search to see the whole deck.' : 'Add a myth and its evidence to start building a game.';
-  $('empty-action').textContent = deck.length ? 'Clear search' : 'Add myth';
+function updateEmptyState() {
+  $('empty').hidden = deck.length > 0;
+  $('empty-title').textContent = 'Your deck is empty';
+  $('empty-description').textContent = 'Add a myth and its evidence to start building a game.';
+  $('empty-action').textContent = 'Add myth';
 }
 function addMyth() {
   if (deck.length >= 100) { say('This deck can contain up to 100 myths.'); return; }
@@ -238,7 +227,6 @@ function addMyth() {
   const evidenceId = Math.max(0, ...deck.flatMap(m => m.evidence.map(e => e.id))) + 1;
   deck.push({ id, text: '', evidence: [{ id: evidenceId, text: '' }] });
   activeMyth = id;
-  $('search').value = '';
   persist(); renderEditor(); focusField('myth', id);
 }
 function makeGuide() {
@@ -325,21 +313,19 @@ async function generate() {
 $('generate').onclick = generate;
 $('print').onclick = () => { if (generated) window.print(); };
 $('add').onclick = addMyth;
-$('search').oninput = applySearch;
-$('empty-action').onclick = () => { if (deck.length) { $('search').value = ''; applySearch(); $('search').focus(); } else addMyth(); };
+$('empty-action').onclick = addMyth;
 $('dismiss').onclick = () => { $('notice').hidden = true; $('generate').focus(); };
 $('undo').onclick = () => {
   if (!undoDeck) return;
   deck = undoDeck; undoDeck = null;
   activeMyth = deck[0]?.id; proof = { type: 'myth', id: activeMyth };
-  $('search').value = '';
   persist(); renderEditor();
   say('Previous deck restored.');
   if (activeMyth) $(`myth-row-${activeMyth}`).querySelector('summary').focus(); else $('add').focus();
 };
 $('reset').onclick = () => {
   recordUndo(); deck = structuredClone(initialDeck); activeMyth = deck[0].id;
-  proof = { type: 'myth', id: activeMyth }; $('search').value = '';
+  proof = { type: 'myth', id: activeMyth };
   persist(); renderEditor(); say('Starting deck restored. Your previous edits can be recovered with Undo.', true);
   $('undo').focus();
 };

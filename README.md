@@ -16,7 +16,7 @@ Alternatively: `python3 -m http.server 8000`. No installation or production buil
 
 ## Use
 
-- Search the deck, expand a myth, and edit its matching evidence. Focusing a field shows its printable card in a live preview. IDs are stable and evidence numbering preserves the source's shuffled matches.
+- Expand a myth and edit its matching evidence. Generate deck, Add myth, and Reset deck share one toolbar. Focusing a field shows its printable card in a live preview. IDs are stable and evidence numbering preserves the source's shuffled matches.
 - Add or remove cards. Undo restores the previous deck after removal or reset; typing a new edit clears that single Undo snapshot.
 - Changes, including unfinished blank drafts, save to localStorage in the current browser. Reset deck restores the starting data, with Undo available. There is no shared database or simultaneous editing.
 - Generate game creates 2.5 × 3.5 inch cards, nine per US Letter sheet, plus a text-based teacher answer key. Evidence cards show small IDs; myth cards show their matching evidence IDs. Neither has a footer.
