@@ -2,7 +2,8 @@ import { initialDeck } from './initial-data.js';
 import { validateDeck, makeCards, paginate } from './deck.js';
 
 const $ = id => document.getElementById(id);
-const storageKey = 'climate-mythbusters-v1';
+const previewPath = location.pathname.match(/\/previews\/pr-\d+\//)?.[0];
+const storageKey = `climate-mythbusters-v1${previewPath || ''}`;
 let deck = structuredClone(initialDeck);
 let activeMyth = deck[0].id;
 let proof = { type: 'myth', id: activeMyth };
@@ -73,10 +74,8 @@ function currentCard() {
 function makeCard(item, placeholder = false) {
   const node = el('article', undefined, `game-card ${item.type}`);
   const label = el('div', undefined, 'card-label');
-  label.append(el('span', item.type === 'myth' ? 'Myth' : 'Evidence'), el('span', String(item.id).padStart(2, '0'), 'card-id'));
-  const footer = el('div', undefined, 'card-footer');
-  footer.append(el('span', 'Climate Mythbusters'), el('span', 'North Carolina'));
-  node.append(label, el('p', item.text || (placeholder ? 'Your card text will appear here.' : ''), 'card-text'), footer);
+  label.append(el('span', item.type === 'myth' ? 'Myth' : 'Evidence'));
+  node.append(label, el('p', item.text || (placeholder ? 'Your card text will appear here.' : ''), 'card-text'));
   return node;
 }
 function showProof(type, id) {
@@ -90,7 +89,7 @@ function showProof(type, id) {
     return;
   }
   $('live-proof').append(makeCard(item, true));
-  $('proof-position').textContent = `${type === 'myth' ? 'Myth' : 'Evidence'} ${id}`;
+  $('proof-position').textContent = type === 'myth' ? 'Myth' : 'Evidence';
   checkProofFit();
 }
 function checkProofFit() {
@@ -111,7 +110,7 @@ function setFieldError(field, message = '') {
 function makeField(item, type, myth, remove) {
   const wrap = el('div', undefined, `field ${type}`);
   const top = el('div', undefined, 'field-top');
-  const label = el('label', `${type === 'myth' ? 'Myth' : 'Evidence'} ${item.id}`);
+  const label = el('label', type === 'myth' ? 'Myth' : 'Evidence');
   const input = el('textarea');
   input.id = fieldId(type, item.id);
   input.name = input.id;
@@ -190,11 +189,9 @@ function renderEditor() {
     row.dataset.mythId = myth.id;
     row.open = activeMyth === myth.id;
     const summary = el('summary', undefined, 'myth-summary');
-    const number = el('span', String(myth.id).padStart(2, '0'), 'myth-number');
-    number.setAttribute('aria-label', `Myth ${myth.id}`);
     const title = el('span', myth.text.trim() || 'Untitled myth', 'myth-title');
     title.id = `myth-title-${myth.id}`;
-    summary.append(number, title, el('span', `${myth.evidence.length} evidence`, 'evidence-count'));
+    summary.append(title, el('span', `${myth.evidence.length} evidence`, 'evidence-count'));
     const editor = el('div', undefined, 'row-editor');
     editor.append(makeField(myth, 'myth', myth));
     myth.evidence.forEach(e => editor.append(makeField(e, 'evidence', myth, () => removeEvidence(myth, e.id))));
@@ -242,10 +239,17 @@ function addMyth() {
 }
 function makeGuide() {
   const page = el('section', undefined, 'guide-page');
-  page.append(el('h2', 'Climate Mythbusters'), el('p', 'Teacher guide and answer key'), el('h3', 'Set up'), el('p', 'For 3 or more players. Separate and shuffle the myth and evidence decks. Deal each player 3 evidence cards. Put the remaining evidence in a draw pile. For a small custom deck, deal fewer cards or play in pairs.'), el('h3', 'Play a round'), el('p', 'Rotate the Myth Spreader each round. They read one myth aloud; the other players race to play evidence that challenges it and explain why. Check the answer key. A correct match earns 1 point; draw a replacement evidence card. An incorrect match earns no point; return the card and let others try.'), el('p', 'If nobody can match, put the myth at the bottom of its deck and have each player exchange one evidence card with the draw pile. Reshuffle discarded evidence when needed. The first player to earn 3 points wins. Keep this key with the facilitator.'), el('h3', 'Matching evidence'));
+  page.append(el('h2', 'Teacher answer key'));
   const key = el('div', undefined, 'answer-key');
-  deck.forEach(m => key.append(el('p', `Myth ${m.id}: Evidence ${m.evidence.map(e => e.id).join(' or ')}`)));
-  page.append(key, el('h3', 'Discuss after playing'), el('p', 'Which evidence surprised you? What makes a source trustworthy? How does a local example connect to the longer-term climate trend?'));
+  deck.forEach(m => {
+    const match = el('section', undefined, 'answer-match');
+    match.append(el('h3', m.text));
+    const evidence = el('ul');
+    m.evidence.forEach(e => evidence.append(el('li', e.text)));
+    match.append(evidence);
+    key.append(match);
+  });
+  page.append(key);
   return page;
 }
 function fitSheet(frame) {
@@ -295,7 +299,7 @@ async function generate() {
     [...$('print-pages').children].forEach((page, index, pages) => {
       const details = el('details', undefined, 'sheet-preview');
       details.open = index < 2;
-      details.append(el('summary', index === pages.length - 1 ? 'Teacher guide and answer key' : `Card sheet ${index + 1}`));
+      details.append(el('summary', index === pages.length - 1 ? 'Teacher answer key' : `Card sheet ${index + 1}`));
       const frame = el('div', undefined, 'sheet-frame');
       frame.append(page.cloneNode(true));
       details.append(frame);
@@ -307,7 +311,7 @@ async function generate() {
     $('preview').hidden = false;
     $('print').disabled = false;
     $('stale-note').hidden = true;
-    $('preview-description').textContent = `${cards.length} cards · ${paginate(cards).length} card sheets · Teacher guide included`;
+    $('preview-description').textContent = `${cards.length} cards · ${paginate(cards).length} card sheets · Answer key included`;
     $('preview-title').focus({ preventScroll: true });
     scrollToNode($('preview-title'));
     $('notice').hidden = true;
