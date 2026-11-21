@@ -17,8 +17,8 @@ Alternatively: `python3 -m http.server 8000`. No installation or production buil
 ## Use
 
 - Search the deck, expand a myth, and edit its matching evidence. Focusing a field shows its printable card in a live preview. IDs are stable and evidence numbering preserves the source's shuffled matches.
-- Add or remove cards. Undo restores the previous deck after removal, import, or reset; typing a new edit clears that single Undo snapshot.
-- Changes, including unfinished blank drafts, save to localStorage in the current browser. Use Deck options to download/load JSON to back up or share a deck. There is no shared database or simultaneous editing.
+- Add or remove cards. Undo restores the previous deck after removal or reset; typing a new edit clears that single Undo snapshot.
+- Changes, including unfinished blank drafts, save to localStorage in the current browser. Reset deck restores the starting data, with Undo available. There is no shared database or simultaneous editing.
 - Generate game creates 2.5 × 3.5 inch cards, nine per US Letter sheet, plus a text-based teacher answer key. Evidence cards show small IDs; myth cards show their matching evidence IDs. Neither has a footer.
 - Select Letter, portrait, 100% scale, single-sided, and disable browser headers/footers when printing. Cut along dotted borders. Text overflow blocks generation so it can be shortened before printing.
 - Editing invalidates the preview; generate again before printing.
@@ -32,7 +32,7 @@ The source wording is preserved, not independently fact-checked. Review scientif
 
 ## Files
 
-- `index.html`, `styles.css`, `app.js`: interface, card layout, browser saving, import/export, and printing.
+- `index.html`, `styles.css`, `app.js`: interface, card layout, browser saving, reset/Undo, and printing.
 - `initial-data.js`: starting content.
 - `deck.js`: validation, card ordering, pagination.
 - `deck.test.js`: data integrity and pagination checks.

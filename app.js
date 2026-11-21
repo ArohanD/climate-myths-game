@@ -44,7 +44,6 @@ function say(text, undo = false) {
 function scrollToNode(node) {
   node.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
 }
-function closeOptions() { $('file-controls').open = false; }
 function persist() {
   revision++;
   generated = false;
@@ -57,7 +56,7 @@ function persist() {
     $('save-status').textContent = 'Saved in this browser.';
   } catch {
     persistenceFailed = true;
-    $('save-status').textContent = 'Browser saving is unavailable. Download your deck to keep these edits.';
+    $('save-status').textContent = 'Browser saving is unavailable. Keep this page open to retain your edits.';
   }
   updateCounts();
 }
@@ -339,31 +338,11 @@ $('undo').onclick = () => {
   if (activeMyth) $(`myth-row-${activeMyth}`).querySelector('summary').focus(); else $('add').focus();
 };
 $('reset').onclick = () => {
-  closeOptions(); recordUndo(); deck = structuredClone(initialDeck); activeMyth = deck[0].id;
+  recordUndo(); deck = structuredClone(initialDeck); activeMyth = deck[0].id;
   proof = { type: 'myth', id: activeMyth }; $('search').value = '';
   persist(); renderEditor(); say('Starting deck restored. Your previous edits can be recovered with Undo.', true);
   $('undo').focus();
 };
-$('export').onclick = () => {
-  closeOptions();
-  const url = URL.createObjectURL(new Blob([JSON.stringify(deck, null, 2)], { type: 'application/json' }));
-  const link = el('a'); link.href = url; link.download = 'climate-mythbusters-deck.json'; link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  $('file-controls').querySelector('summary').focus();
-};
-$('import').onclick = () => { closeOptions(); $('file').click(); };
-$('file').onchange = async event => {
-  const file = event.target.files[0]; if (!file) return;
-  try {
-    if (file.size > 1000000) throw new Error('Choose a JSON file smaller than 1 MB.');
-    const next = validateDeck(JSON.parse(await file.text()), { draft: true });
-    recordUndo(); deck = next; activeMyth = deck[0]?.id; proof = { type: 'myth', id: activeMyth };
-    $('search').value = ''; persist(); renderEditor(); say('Deck loaded. You can restore the previous deck with Undo.', true); $('undo').focus();
-  } catch (error) { say(`Deck not loaded. ${error.message}`); $('file-controls').querySelector('summary').focus(); }
-  event.target.value = '';
-};
-document.addEventListener('keydown', event => { if (event.key === 'Escape' && $('file-controls').open) { closeOptions(); $('file-controls').querySelector('summary').focus(); } });
-document.addEventListener('click', event => { if (!$('file-controls').contains(event.target)) closeOptions(); });
 window.addEventListener('beforeunload', event => { if (persistenceFailed) { event.preventDefault(); event.returnValue = ''; } });
 renderEditor();
 document.fonts.ready.then(checkProofFit);
