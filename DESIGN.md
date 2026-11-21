@@ -1,5 +1,15 @@
 # Climate Mythbusters design rules
 
+## Current direction: Cut-paper club
+
+Selected by the user on November 21, 2026. This supersedes the earlier blue-workbench styling decisions below: warm paper, black cut-out wordmark, yellow highlight, taped editor and red/blue cut-out category labels. Georgia is used for the heading and myth cards; editable fields and evidence keep a plain sans face. No card numbers or footers are visible. IDs remain internal for data relationships; the teacher key pairs full card text.
+
+Content policy: preserve source myth/evidence wording. Newly written text is limited to essential interface labels, technical print guidance, validation and state feedback. Remove the earlier generated marketing, gameplay adaptations and discussion prompts. Do not add substantive teaching content without source text or explicit user approval.
+
+Verified: six data tests, Pages assembly test, initial 36-card generation, 12 full-text answer mappings, zero card-ID/footer elements, desktop inspection and 360px layout without horizontal page overflow. The Google Doc transcription is unchanged. Saved-PDF rendering and physical output are not verified.
+
+## Earlier synthesis and design history
+
 This is the consolidated design contract for the card-builder app. It synthesizes the core rule sets and applicable supporting guidance of four systems, rather than installing four incompatible runtimes or copying a reference site's appearance. Retrieved 2026-11-21.
 
 ## Sources
