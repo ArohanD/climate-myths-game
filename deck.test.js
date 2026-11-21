@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { initialDeck } from './initial-data.js';
+import { validateDeck, makeCards, paginate } from './deck.js';
+test('original deck preserves all shuffled matches and produces four complete sheets',()=>{const deck=validateDeck(initialDeck);assert.equal(deck.length,12);assert.equal(makeCards(deck).length,36);assert.deepEqual(deck.find(m=>m.id===4).evidence.map(e=>e.id),[24,5]);assert.deepEqual(paginate(makeCards(deck)).map(p=>p.length),[9,9,9,9]);assert.equal(new Set(deck.flatMap(m=>m.evidence.map(e=>e.id))).size,24);});
+test('rejects duplicate evidence IDs across myths',()=>{const d=structuredClone(initialDeck);d[1].evidence[0].id=d[0].evidence[0].id;assert.throws(()=>validateDeck(d),/unique/);});
+test('rejects missing content and malformed imported decks',()=>{assert.throws(()=>validateDeck([]));assert.throws(()=>validateDeck({}));const d=structuredClone(initialDeck);d[0].text=' ';assert.throws(()=>validateDeck(d),/needs text/);});
+test('partial page retains all cards',()=>{assert.deepEqual(paginate(makeCards(initialDeck).slice(0,10)).map(p=>p.length),[9,1]);});
+test('unfinished drafts survive storage while generation requires complete text',()=>{const d=structuredClone(initialDeck);d[0].text='';d[0].evidence[0].text='';assert.equal(validateDeck(d,{draft:true})[0].text,'');assert.throws(()=>validateDeck(d),/needs text/);assert.deepEqual(validateDeck([],{draft:true}),[]);});
+test('malformed imported entries receive useful errors',()=>{assert.throws(()=>validateDeck([null]),/Myth numbers/);const d=structuredClone(initialDeck);d[0].evidence=[null];assert.throws(()=>validateDeck(d),/Evidence numbers/);});
