@@ -1,5 +1,5 @@
 import { initialDeck } from './initial-data.js';
-import { validateDeck, makeCards, paginate } from './deck.js';
+import { validateDeck, makeCards, paginate } from './deck.js?v=20261121-3';
 
 const $ = id => document.getElementById(id);
 const previewPath = location.pathname.match(/\/previews\/pr-\d+\//)?.[0];
