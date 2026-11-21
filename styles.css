@@ -24,3 +24,9 @@
 
 /* Primary action sits beside deck editing controls. */
 #generate{background:#285a3d;color:#fff}#generate:hover:not(:disabled){background:#1d442d}.editor-tools{justify-content:flex-start}
+.editor-tools{gap:.75rem;align-items:center}
+.editor-tools>button{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:48px;padding:.75rem 1rem;font-size:1rem;line-height:1.25;font-weight:600;border:1px solid var(--control-line);border-radius:0;white-space:nowrap}
+.editor-tools>#generate{border-color:#285a3d;box-shadow:none}
+.editor-tools>#reset{background:var(--surface);color:var(--ink)}
+.editor-tools>#reset:hover{background:var(--selection)}
+@media(max-width:560px){.editor-tools{display:grid;grid-template-columns:1fr 1fr}.editor-tools>#generate{grid-column:1/-1}}
