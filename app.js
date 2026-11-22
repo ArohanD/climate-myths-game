@@ -1,13 +1,12 @@
 import { initialDeck, initialWildcards } from './initial-data.js';
-import { validateDeck, validateWildcards, restoreDeck, makeCards, paginate } from './deck.js?v=20261121-3';
+import { validateDeck, validateWildcards, restoreDeck, makeCards, paginate } from './deck.js?v=20261121-5';
 
 const $ = id => document.getElementById(id);
+const cardNames = { myth: 'Myth', evidence: 'Evidence', wildcard: 'Wildcard' };
 const previewPath = location.pathname.match(/\/previews\/pr-\d+\//)?.[0];
 const storageKey = `climate-mythbusters-v1${previewPath || ''}`;
 let deck = structuredClone(initialDeck);
 let wildcards = structuredClone(initialWildcards);
-let activeMyth = deck[0].id;
-let proof = { type: 'myth', id: activeMyth };
 let undoDeck = null;
 let revision = 0;
 let generated = false;
@@ -20,13 +19,14 @@ try {
   const saved = localStorage.getItem(storageKey);
   if (saved !== null) {
     const restored = restoreDeck(JSON.parse(saved), initialWildcards);
-    deck = restored.myths; wildcards = restored.wildcards;
+    deck = restored.myths;
+    wildcards = restored.wildcards;
   }
 } catch {
   loadMessage = 'Saved edits could not be loaded. The starting deck is shown; your saved file has not been changed.';
 }
-activeMyth = deck[0]?.id;
-proof.id = activeMyth;
+let activeMyth = deck[0]?.id;
+let proof = { type: 'myth', id: activeMyth };
 
 function el(tag, text, className) {
   const node = document.createElement(tag);
@@ -65,20 +65,34 @@ function persist() {
   updateCounts();
 }
 function recordUndo() { undoDeck = structuredClone({ myths: deck, wildcards }); }
-function discardUndo() { undoDeck = null; $('undo').hidden = true; }
+function discardUndo() {
+  undoDeck = null;
+  $('undo').hidden = true;
+}
 function updateCounts() {
   const evidence = deck.reduce((total, myth) => total + myth.evidence.length, 0);
   $('counts').textContent = `${deck.length} myths · ${evidence} evidence cards · ${wildcards.length} wildcards`;
 }
+function nextId(cards) {
+  return Math.max(0, ...cards.map(card => card.id)) + 1;
+}
 function currentCard() {
-  const item = proof.type === 'wildcard' ? wildcards.find(w => w.id === proof.id) : proof.type === 'myth' ? deck.find(m => m.id === proof.id) : deck.flatMap(m => m.evidence).find(e => e.id === proof.id);
+  let cards;
+  if (proof.type === 'wildcard') {
+    cards = wildcards;
+  } else if (proof.type === 'myth') {
+    cards = deck;
+  } else {
+    cards = deck.flatMap(myth => myth.evidence);
+  }
+  const item = cards.find(card => card.id === proof.id);
   return item ? { ...item, type: proof.type, evidenceIds: item.evidence?.map(e => e.id) } : null;
 }
 function makeCard(item, placeholder = false) {
   const node = el('article', undefined, `game-card ${item.type}`);
   const heading = el('div', undefined, 'card-heading');
   const label = el('div', undefined, 'card-label');
-  label.append(el('span', cardName(item.type)));
+  label.append(el('span', cardNames[item.type]));
   heading.append(label);
   if (item.type === 'evidence') heading.append(el('span', `#${item.id}`, 'evidence-number'));
   node.append(heading);
@@ -101,18 +115,20 @@ function showProof(type, id) {
     return;
   }
   $('live-proof').append(makeCard(item, true));
-  $('proof-position').textContent = cardName(type);
+  $('proof-position').textContent = cardNames[type];
   checkProofFit();
+}
+function cardTextOverflows(text) {
+  return text.scrollHeight > text.clientHeight + 1;
 }
 function checkProofFit() {
   const item = currentCard();
   const text = $('live-proof').querySelector('.card-text');
   if (!item || !text) return;
-  const tooLong = text.scrollHeight > text.clientHeight + 1;
+  const tooLong = cardTextOverflows(text);
   $('fit-status').textContent = !item.text.trim() ? 'Add card text' : tooLong ? 'Text needs shortening' : 'Text fits';
   $('fit-status').dataset.error = String(!item.text.trim() || tooLong);
 }
-function cardName(type) { return {myth: 'Myth', evidence: 'Evidence', wildcard: 'Wildcard'}[type]; }
 function fieldId(type, id) { return `field-${type}-${id}`; }
 function setFieldError(field, message = '') {
   field.setAttribute('aria-invalid', String(Boolean(message)));
@@ -123,7 +139,7 @@ function setFieldError(field, message = '') {
 function makeField(item, type, myth, remove) {
   const wrap = el('div', undefined, `field ${type}`);
   const top = el('div', undefined, 'field-top');
-  const label = el('label', cardName(type));
+  const label = el('label', cardNames[type]);
   const input = el('textarea');
   input.id = fieldId(type, item.id);
   input.name = input.id;
@@ -159,7 +175,9 @@ function makeField(item, type, myth, remove) {
 function focusField(type, id) {
   if (type === 'wildcard') {
     const field = $(fieldId(type, id));
-    field.focus({ preventScroll: true }); scrollToNode(field); return;
+    field.focus({ preventScroll: true });
+    scrollToNode(field);
+    return;
   }
   const myth = type === 'myth' ? deck.find(m => m.id === id) : deck.find(m => m.evidence.some(e => e.id === id));
   if (!myth) return;
@@ -171,11 +189,16 @@ function focusField(type, id) {
   scrollToNode(field);
 }
 function removeEvidence(myth, evidenceId) {
-  if (myth.evidence.length === 1) { say('Keep at least one evidence card for this myth, or remove the whole myth.'); return; }
+  if (myth.evidence.length === 1) {
+    say('Keep at least one evidence card for this myth, or remove the whole myth.');
+    return;
+  }
   recordUndo();
   myth.evidence = myth.evidence.filter(e => e.id !== evidenceId);
   proof = { type: 'myth', id: myth.id };
-  persist(); renderEditor(); focusField('myth', myth.id);
+  persist();
+  renderEditor();
+  focusField('myth', myth.id);
   say(`Evidence ${evidenceId} removed.`, true);
 }
 function removeMyth(mythId) {
@@ -184,16 +207,26 @@ function removeMyth(mythId) {
   deck.splice(index, 1);
   activeMyth = deck[Math.min(index, deck.length - 1)]?.id;
   proof = { type: 'myth', id: activeMyth };
-  persist(); renderEditor();
-  if (activeMyth) $(`myth-row-${activeMyth}`).querySelector('summary').focus(); else $('add').focus();
+  persist();
+  renderEditor();
+  if (activeMyth) {
+    $(`myth-row-${activeMyth}`).querySelector('summary').focus();
+  } else {
+    $('add').focus();
+  }
   say(`Myth ${mythId} and its evidence removed.`, true);
 }
 function addEvidence(myth) {
-  if (myth.evidence.length >= 10) { say('Each myth can have up to 10 evidence cards.'); return; }
+  if (myth.evidence.length >= 10) {
+    say('Each myth can have up to 10 evidence cards.');
+    return;
+  }
   recordUndo();
-  const id = Math.max(0, ...deck.flatMap(m => m.evidence.map(e => e.id))) + 1;
+  const id = nextId(deck.flatMap(m => m.evidence));
   myth.evidence.push({ id, text: '' });
-  persist(); renderEditor(); focusField('evidence', id);
+  persist();
+  renderEditor();
+  focusField('evidence', id);
 }
 function renderEditor() {
   $('rows').replaceChildren();
@@ -224,7 +257,7 @@ function renderEditor() {
     $('rows').append(row);
   });
   renderWildcards();
-  updateEmptyState();
+  $('empty').hidden = deck.length > 0;
   if (!currentCard()) proof = { type: 'myth', id: deck[0]?.id };
   showProof(proof.type, proof.id);
 }
@@ -235,33 +268,42 @@ function renderWildcards() {
     const field = makeField(card, 'wildcard', null, () => {
       recordUndo();
       wildcards = wildcards.filter(w => w.id !== card.id);
-      if (proof.type === 'wildcard' && proof.id === card.id) proof = {type: 'myth', id: deck[0]?.id};
-      persist(); renderEditor(); $('add-wildcard').focus(); say('Wildcard removed.', true);
+      if (proof.type === 'wildcard' && proof.id === card.id) {
+        proof = { type: 'myth', id: deck[0]?.id };
+      }
+      persist();
+      renderEditor();
+      $('add-wildcard').focus();
+      say('Wildcard removed.', true);
     });
     $('wildcard-rows').append(field);
   });
 }
 function addWildcard() {
-  if (wildcards.length >= 100) { say('This deck can contain up to 100 wildcards.'); return; }
+  if (wildcards.length >= 100) {
+    say('This deck can contain up to 100 wildcards.');
+    return;
+  }
   recordUndo();
-  const id = Math.max(0, ...wildcards.map(w => w.id)) + 1;
-  wildcards.push({id, text: ''});
-  persist(); renderEditor(); focusField('wildcard', id);
-}
-function updateEmptyState() {
-  $('empty').hidden = deck.length > 0;
-  $('empty-title').textContent = 'Your deck is empty';
-  $('empty-description').textContent = 'Add a myth and its evidence to start building a game.';
-  $('empty-action').textContent = 'Add myth';
+  const id = nextId(wildcards);
+  wildcards.push({ id, text: '' });
+  persist();
+  renderEditor();
+  focusField('wildcard', id);
 }
 function addMyth() {
-  if (deck.length >= 100) { say('This deck can contain up to 100 myths.'); return; }
+  if (deck.length >= 100) {
+    say('This deck can contain up to 100 myths.');
+    return;
+  }
   recordUndo();
-  const id = Math.max(0, ...deck.map(m => m.id)) + 1;
-  const evidenceId = Math.max(0, ...deck.flatMap(m => m.evidence.map(e => e.id))) + 1;
+  const id = nextId(deck);
+  const evidenceId = nextId(deck.flatMap(m => m.evidence));
   deck.push({ id, text: '', evidence: [{ id: evidenceId, text: '' }] });
   activeMyth = id;
-  persist(); renderEditor(); focusField('myth', id);
+  persist();
+  renderEditor();
+  focusField('myth', id);
 }
 function makeGuide() {
   const page = el('section', undefined, 'guide-page');
@@ -289,32 +331,75 @@ function fitSheet(frame) {
   sheet.style.transform = `scale(${scale})`;
   frame.style.height = `${sheet.offsetHeight * scale}px`;
 }
+function measureOverflow(cards) {
+  document.body.classList.add('measuring');
+  try {
+    const textNodes = $('print-pages').querySelectorAll('.card-text');
+    return cards.filter((_, index) => cardTextOverflows(textNodes[index]));
+  } finally {
+    document.body.classList.remove('measuring');
+  }
+}
+function renderPreview(pages) {
+  sheetObserver.disconnect();
+  $('preview-pages').replaceChildren();
+  pages.forEach((page, index) => {
+    const details = el('details', undefined, 'sheet-preview');
+    details.open = index < 2;
+    details.append(el('summary', index === pages.length - 1 ? 'Teacher answer key' : `Card sheet ${index + 1}`));
+    const frame = el('div', undefined, 'sheet-frame');
+    frame.append(page.cloneNode(true));
+    details.append(frame);
+    details.addEventListener('toggle', () => fitSheet(frame));
+    $('preview-pages').append(details);
+    sheetObserver.observe(frame);
+  });
+}
 async function generate() {
   if (generationPending) return;
-  if (!deck.length) { say('Add at least one myth and its evidence to generate a game.'); $('add').focus(); return; }
+  if (!deck.length) {
+    say('Add at least one myth and its evidence to generate a game.');
+    $('add').focus();
+    return;
+  }
+  const cards = makeCards(deck, wildcards);
   let firstInvalid = null;
-  for (const item of makeCards(deck, wildcards)) {
+  for (const item of cards) {
     const field = $(fieldId(item.type, item.id));
     const message = item.text.trim() ? '' : 'Add text before generating this card.';
     setFieldError(field, message);
     if (message && !firstInvalid) firstInvalid = item;
   }
-  if (firstInvalid) { focusField(firstInvalid.type, firstInvalid.id); say('Some cards need text. Complete the highlighted field, then generate again.'); return; }
-  try { validateDeck(deck); validateWildcards(wildcards); } catch (error) { say(error.message); return; }
+  if (firstInvalid) {
+    focusField(firstInvalid.type, firstInvalid.id);
+    say('Some cards need text. Complete the highlighted field, then generate again.');
+    return;
+  }
+  try {
+    validateDeck(deck);
+    validateWildcards(wildcards);
+  } catch (error) {
+    say(error.message);
+    return;
+  }
   generationPending = true;
   $('generate').disabled = true;
   const startedAt = revision;
   try {
     await document.fonts.ready;
-    if (revision !== startedAt) { say('The deck changed. Generate again when your edits are ready.'); return; }
-    const cards = makeCards(deck, wildcards);
-    $('print-pages').replaceChildren();
-    paginate(cards).forEach(group => { const page = el('section', undefined, 'card-page'); group.forEach(c => page.append(makeCard(c))); $('print-pages').append(page); });
-    $('print-pages').append(makeGuide());
-    document.body.classList.add('measuring');
-    const textNodes = [...$('print-pages').querySelectorAll('.card-text')];
-    const overflow = textNodes.map((node, i) => node.scrollHeight > node.clientHeight + 1 ? cards[i] : null).filter(Boolean);
-    document.body.classList.remove('measuring');
+    if (revision !== startedAt) {
+      say('The deck changed. Generate again when your edits are ready.');
+      return;
+    }
+    const sheets = paginate(cards);
+    const pages = sheets.map(group => {
+      const page = el('section', undefined, 'card-page');
+      group.forEach(card => page.append(makeCard(card)));
+      return page;
+    });
+    pages.push(makeGuide());
+    $('print-pages').replaceChildren(...pages);
+    const overflow = measureOverflow(cards);
     if (overflow.length) {
       $('print-pages').replaceChildren();
       overflow.forEach(c => setFieldError($(fieldId(c.type, c.id)), 'This text exceeds the card size. Shorten it before printing.'));
@@ -322,28 +407,19 @@ async function generate() {
       say(`Shorten ${overflow.length} ${overflow.length === 1 ? 'card' : 'cards'} to fit the printed size.`);
       return;
     }
-    sheetObserver.disconnect();
-    $('preview-pages').replaceChildren();
-    [...$('print-pages').children].forEach((page, index, pages) => {
-      const details = el('details', undefined, 'sheet-preview');
-      details.open = index < 2;
-      details.append(el('summary', index === pages.length - 1 ? 'Teacher answer key' : `Card sheet ${index + 1}`));
-      const frame = el('div', undefined, 'sheet-frame');
-      frame.append(page.cloneNode(true));
-      details.append(frame);
-      details.addEventListener('toggle', () => fitSheet(frame));
-      $('preview-pages').append(details);
-      sheetObserver.observe(frame);
-    });
+    renderPreview(pages);
     generated = true;
     $('preview').hidden = false;
     $('print').disabled = false;
     $('stale-note').hidden = true;
-    $('preview-description').textContent = `${cards.length} cards · ${paginate(cards).length} card sheets · Answer key included`;
+    $('preview-description').textContent = `${cards.length} cards · ${sheets.length} card sheets · Answer key included`;
     $('preview-title').focus({ preventScroll: true });
     scrollToNode($('preview-title'));
     $('notice').hidden = true;
-  } finally { document.body.classList.remove('measuring'); generationPending = false; $('generate').disabled = false; }
+  } finally {
+    generationPending = false;
+    $('generate').disabled = false;
+  }
 }
 
 $('generate').onclick = generate;
@@ -351,19 +427,35 @@ $('print').onclick = () => { if (generated) window.print(); };
 $('add').onclick = addMyth;
 $('add-wildcard').onclick = addWildcard;
 $('empty-action').onclick = addMyth;
-$('dismiss').onclick = () => { $('notice').hidden = true; $('generate').focus(); };
+$('dismiss').onclick = () => {
+  $('notice').hidden = true;
+  $('generate').focus();
+};
 $('undo').onclick = () => {
   if (!undoDeck) return;
-  deck = undoDeck.myths; wildcards = undoDeck.wildcards; undoDeck = null;
-  activeMyth = deck[0]?.id; proof = { type: 'myth', id: activeMyth };
-  persist(); renderEditor();
+  deck = undoDeck.myths;
+  wildcards = undoDeck.wildcards;
+  undoDeck = null;
+  activeMyth = deck[0]?.id;
+  proof = { type: 'myth', id: activeMyth };
+  persist();
+  renderEditor();
   say('Previous deck restored.');
-  if (activeMyth) $(`myth-row-${activeMyth}`).querySelector('summary').focus(); else $('add').focus();
+  if (activeMyth) {
+    $(`myth-row-${activeMyth}`).querySelector('summary').focus();
+  } else {
+    $('add').focus();
+  }
 };
 $('reset').onclick = () => {
-  recordUndo(); deck = structuredClone(initialDeck); wildcards = structuredClone(initialWildcards); activeMyth = deck[0].id;
+  recordUndo();
+  deck = structuredClone(initialDeck);
+  wildcards = structuredClone(initialWildcards);
+  activeMyth = deck[0].id;
   proof = { type: 'myth', id: activeMyth };
-  persist(); renderEditor(); say('Starting deck restored. Your previous edits can be recovered with Undo.', true);
+  persist();
+  renderEditor();
+  say('Starting deck restored. Your previous edits can be recovered with Undo.', true);
   $('undo').focus();
 };
 window.addEventListener('beforeunload', event => { if (persistenceFailed) { event.preventDefault(); event.returnValue = ''; } });
