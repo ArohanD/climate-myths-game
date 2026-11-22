@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deckFromCSV, parseCSV, sync, fetchSheet } from './sync-sheet.mjs';
+import { deckFromCSV, parseCSV, sync, fetchSheet, wildcardsFromCSV, WILDCARD_SHEET_URL } from './sync-sheet.mjs';
 import { initialDeck } from '../../initial-data.js';
 
 const csv = rows => rows.map(row => row.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\r\n');
@@ -33,7 +33,7 @@ test('dry runs and invalid downloads never overwrite defaults; updates are idemp
   const destination = join(directory, 'initial-data.js');
   try {
     await writeFile(destination, 'original');
-    const fetcher = async () => new Response(source());
+    const fetcher = async url => new Response(url === WILDCARD_SHEET_URL ? 'wildcard_id,wildcard\n' : source());
     assert.equal((await sync({destination, fetcher, dryRun:true})).changed, true);
     assert.equal(await readFile(destination, 'utf8'), 'original');
     await assert.rejects(sync({destination, fetcher:async () => new Response('<html>Denied</html>')}));
@@ -41,4 +41,21 @@ test('dry runs and invalid downloads never overwrite defaults; updates are idemp
     assert.equal((await sync({destination, fetcher})).changed, true);
     assert.equal((await sync({destination, fetcher})).changed, false);
   } finally { await rm(directory, {recursive:true, force:true}); }
+});
+test('wildcard CSV allows an empty tab and preserves exact text and independent IDs',()=>{
+  assert.deepEqual(wildcardsFromCSV('wildcard_id,wildcard\n'), []);
+  assert.deepEqual(wildcardsFromCSV(csv([['wildcard_id','wildcard'],[1,'A "quoted", multiline\ncard.']])),[{id:1,text:'A "quoted", multiline\ncard.'}]);
+  for (const input of [csv([['wildcard_id','wildcard'],[1,'']]),csv([['wildcard_id','wildcard'],[1,'a'],[1,'b']]),'unavailable']) assert.throws(()=>wildcardsFromCSV(input));
+});
+test('both sheets must validate before either default collection is written',async()=>{
+  const directory = await mkdtemp(join(tmpdir(),'wildcard-sync-'));
+  const destination = join(directory,'initial-data.js');
+  try {
+    await writeFile(destination,'unchanged');
+    await assert.rejects(sync({destination,fetcher:async url=>new Response(url===WILDCARD_SHEET_URL?'broken':source())}));
+    assert.equal(await readFile(destination,'utf8'),'unchanged');
+    const result = await sync({destination,fetcher:async url=>new Response(url===WILDCARD_SHEET_URL?'wildcard_id,wildcard\n5,Test card':source())});
+    assert.equal(result.wildcards,1);
+    assert.match(await readFile(destination,'utf8'),/export const initialWildcards/);
+  } finally { await rm(directory,{recursive:true,force:true}); }
 });

@@ -168,3 +168,30 @@ export const initialDeck = [
     ]
   }
 ];
+
+export const initialWildcards = [
+  {
+    "id": 1,
+    "text": "Peer Review (The \"Nope\" Card): Cancel another player's Evidence Card by claiming their source is outdated. They have to take their card back and try again."
+  },
+  {
+    "id": 2,
+    "text": "Cherry-Picked Data (Wildcard): Can be used to debunk any Myth, regardless of topic, by pointing out that the myth ignores the bigger picture."
+  },
+  {
+    "id": 3,
+    "text": "Clickbait Headline: Force another player to take your current Myth card and deal with it on their turn instead."
+  },
+  {
+    "id": 4,
+    "text": "Follow the Money: Look at another player's hand of Evidence Cards and steal one that you need."
+  },
+  {
+    "id": 5,
+    "text": "Scientific Consensus (Bomb/Reset Card): Clears the current board, discards all active Myths, and forces everyone to draw 2 new Evidence Cards."
+  },
+  {
+    "id": 6,
+    "text": "Shifting Goalposts: Swap the active Myth card on the table with a new one from the top of the deck after players have already started thinking about their answers."
+  }
+];

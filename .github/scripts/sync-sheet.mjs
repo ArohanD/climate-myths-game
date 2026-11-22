@@ -1,8 +1,9 @@
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { validateDeck } from '../../deck.js';
+import { validateDeck, validateWildcards } from '../../deck.js';
 
 export const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1fesncrZhMUcNB6NUvjBRD_AA6ogtPgRvAUitofFaVc8/export?format=csv&gid=0';
+export const WILDCARD_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1fesncrZhMUcNB6NUvjBRD_AA6ogtPgRvAUitofFaVc8/export?format=csv&gid=1526820701';
 const HEADERS = ['myth_id', 'myth', 'evidence_id', 'evidence'];
 const MAX_BYTES = 1_000_000;
 
@@ -51,8 +52,17 @@ export function deckFromCSV(text) {
   return validateDeck([...myths.values()]);
 }
 
-export async function fetchSheet(fetcher = fetch) {
-  const response = await fetcher(SHEET_URL, { signal: AbortSignal.timeout(30_000) });
+export function wildcardsFromCSV(text) {
+  const [headers, ...rows] = parseCSV(text);
+  if (JSON.stringify(headers) !== JSON.stringify(['wildcard_id', 'wildcard'])) throw new Error('Wildcards tab requires headers: wildcard_id, wildcard.');
+  return validateWildcards(rows.filter(row=>row.some(cell=>cell.trim())).map((row,index)=>{
+    if (row.length !== 2 || !/^[1-9]\d*$/.test(row[0].trim())) throw new Error(`Wildcard row ${index+2}: expected a positive ID and text.`);
+    return {id:Number(row[0]),text:row[1]};
+  }));
+}
+
+export async function fetchSheet(fetcher = fetch, url = SHEET_URL) {
+  const response = await fetcher(url, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new Error(`Sheet export failed (HTTP ${response.status}). Keep the sheet publicly readable.`);
   if (!response.body) throw new Error('Sheet export returned no body.');
   const chunks = [];
@@ -67,7 +77,8 @@ export async function fetchSheet(fetcher = fetch) {
 
 export async function sync({ dryRun = false, destination = 'initial-data.js', fetcher = fetch } = {}) {
   const deck = deckFromCSV(await fetchSheet(fetcher));
-  const next = `export const initialDeck = ${JSON.stringify(deck, null, 2)};\n`;
+  const wildcards = wildcardsFromCSV(await fetchSheet(fetcher, WILDCARD_SHEET_URL));
+  const next = `export const initialDeck = ${JSON.stringify(deck, null, 2)};\n\nexport const initialWildcards = ${JSON.stringify(wildcards, null, 2)};\n`;
   const previous = await readFile(destination, 'utf8');
   const changed = next !== previous;
   // No destination is touched until the complete remote response passes validation.
@@ -76,13 +87,13 @@ export async function sync({ dryRun = false, destination = 'initial-data.js', fe
     await writeFile(temporary, next, 'utf8');
     await rename(temporary, destination);
   }
-  return { changed, myths: deck.length, evidence: deck.reduce((n, m) => n + m.evidence.length, 0) };
+  return { changed, myths: deck.length, evidence: deck.reduce((n, m) => n + m.evidence.length, 0), wildcards: wildcards.length };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const dryRun = process.argv.includes('--dry-run');
     const result = await sync({ dryRun });
-    console.log(`${result.myths} myths, ${result.evidence} evidence cards. ${result.changed ? (dryRun ? 'Changes validated (dry run).' : 'Defaults updated.') : 'No changes.'}`);
+    console.log(`${result.myths} myths, ${result.evidence} evidence cards, ${result.wildcards} wildcards. ${result.changed ? (dryRun ? 'Changes validated (dry run).' : 'Defaults updated.') : 'No changes.'}`);
   } catch (error) { console.error(`Sheet sync stopped: ${error.message}`); process.exitCode = 1; }
 }

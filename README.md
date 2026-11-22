@@ -28,7 +28,9 @@ Alternatively: `python3 -m http.server 8000`. No installation or production buil
 `initial-data.js` transcribes the 12 myths and 24 evidence statements in the MEA 519 team's Google Doc, retrieved November 21, 2026:
 https://docs.google.com/document/d/1AM42lYGqVo3Ljyug9_bPNP5cjSuvoQyOH2TfhluivZQ/edit?tab=t.necv43frbhaq
 
-The source wording is preserved, not independently fact-checked. Review scientific claims and source attribution before classroom distribution, including Evidence 24's statement about severe cold. Wildcards are not included because their final text was not in the supplied table.
+The source wording is preserved, not independently fact-checked. Review scientific claims and source attribution before classroom distribution, including Evidence 24's statement about severe cold. The six draft wildcard descriptions from the document's “Gameplay logistics ideas” tab are included verbatim, as approved by the project owner.
+
+Wildcards have their own editor below the myths and appear after the evidence cards in the printable deck and teacher key. Their IDs are internal and do not appear on printed cards. Add, remove, preview, reset and Undo work for wildcards too. Existing saved myth edits are retained when upgrading; older saves receive the default wildcards. New saves preserve both lists, including blank drafts and an intentionally empty wildcard list.
 
 ## Files
 
@@ -57,6 +59,8 @@ The source of future defaults is the public [Cards sheet](https://docs.google.co
 - Repeat the same myth ID and exact myth text for each of its evidence rows. When editing a myth, update all its rows consistently.
 - IDs must be positive integers; evidence IDs must be unique. Blank rows are ignored; incomplete rows, conflicting myth text, duplicate IDs, empty decks and app-limit violations stop the sync.
 - Keep the sheet publicly readable. No Google credentials are stored in the repository. The script never writes to the sheet.
+- `Wildcards` (gid `1526820701`) uses the exact headers `wildcard_id`, `wildcard`. Each row is one card, with a unique positive integer ID independent of myth/evidence IDs. Up to 100 cards and 2,000 characters per card are supported. Keeping only the header row intentionally removes all default wildcards; a missing or invalid tab fails the sync.
+- Both tabs must download and validate successfully before either set of defaults is updated.
 - Existing scientific statements are copied verbatim; the sync does not generate or fact-check content. It validates structure and text-length limits; the app still checks physical card fit before printing.
 
 After this workflow is merged to `main`, **Actions → Sync defaults from Google Sheet → Run workflow → main** runs it on demand. Check **dry_run** to validate without saving changes. It also runs daily at **09:17 UTC** (GitHub schedules can be delayed). PR runs only validate and never update production.
