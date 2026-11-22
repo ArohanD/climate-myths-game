@@ -80,10 +80,14 @@ function makeCard(item, placeholder = false) {
   const label = el('div', undefined, 'card-label');
   label.append(el('span', cardName(item.type)));
   heading.append(label);
-  if (item.type === 'evidence') heading.append(el('span', String(item.id), 'evidence-number'));
+  if (item.type === 'evidence') heading.append(el('span', `#${item.id}`, 'evidence-number'));
   node.append(heading);
-  if (item.type === 'myth') node.append(el('p', `Evidence ${item.evidenceIds.join(' or ')}`, 'card-matches'));
   node.append(el('p', item.text || (placeholder ? 'Your card text will appear here.' : ''), 'card-text'));
+  if (item.type === 'myth') {
+    const matches = el('p', undefined, 'card-matches');
+    matches.append(el('span', 'Evidence', 'matches-label'), el('span', item.evidenceIds.map(id => `#${id}`).join(' or '), 'matches-numbers'));
+    node.append(matches);
+  }
   return node;
 }
 function showProof(type, id) {
